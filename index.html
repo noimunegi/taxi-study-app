@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>タクシー法令試験 対策</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2563eb">
+    <link rel="apple-touch-icon" href="icon-192.png">
+</head>
+<body>
+    <div id="app">
+        <!-- ヘッダー -->
+        <header>
+            <div class="header-content">
+                <h1 id="screen-title">タクシー法令対策</h1>
+                <button id="dark-mode-toggle" aria-label="ダークモード切替">
+                    <span class="icon">🌙</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- メインコンテンツ -->
+        <main id="main-content">
+            <!-- 画面1: セット選択 -->
+            <section id="set-selection-screen" class="screen active">
+                <div class="welcome">
+                    <h2>学習セットを選択</h2>
+                    <p>解きたい問題を選択してください。</p>
+                </div>
+                <div id="set-list" class="set-list">
+                    <!-- data.js から動的に生成 -->
+                </div>
+            </section>
+
+            <!-- 画面2: 学習画面 -->
+            <section id="study-screen" class="screen">
+                <div class="study-header">
+                    <button id="back-to-menu" class="text-btn">← 戻る</button>
+                    <div class="progress-container">
+                        <div id="progress-bar" class="progress-bar"></div>
+                        <span id="progress-text">0/0</span>
+                    </div>
+                </div>
+
+                <div class="card-container">
+                    <div id="question-card" class="card">
+                        <div class="card-face card-front">
+                            <div class="question-meta">
+                                <span id="question-number">問 1</span>
+                                <span id="question-type" class="badge">⚪︎×問題</span>
+                            </div>
+                            <div id="question-text" class="question-text">
+                                問題文がここに表示されます。
+                            </div>
+                            <div class="tap-hint">タップで解答を表示</div>
+                        </div>
+                        <div class="card-face card-back">
+                            <div class="answer-section">
+                                <div id="answer-icon" class="answer-icon">O</div>
+                                <div id="answer-text" class="answer-label">正解</div>
+                            </div>
+                            <div class="explanation-section">
+                                <h3>解説</h3>
+                                <p id="explanation-text"></p>
+                            </div>
+                            <div class="tap-hint">タップで問題に戻る</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="controls">
+                    <button id="prev-btn" class="ctrl-btn secondary">前へ</button>
+                    <button id="next-btn" class="ctrl-btn primary">次へ</button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- スクリプト -->
+    <script src="data.js"></script>
+    <script src="app.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+    </script>
+</body>
+</html>

@@ -37,7 +37,17 @@
             <!-- 画面2: 学習画面 -->
             <section id="study-screen" class="screen">
                 <div class="study-header">
-                    <button id="back-to-menu" class="text-btn">← 戻る</button>
+                    <div class="study-nav-top">
+                        <button id="back-to-menu" class="text-btn">← 戻る</button>
+                        <div class="study-actions">
+                            <label class="switch" title="シャッフル">
+                                <input type="checkbox" id="shuffle-toggle">
+                                <span class="slider round"></span>
+                                <span class="switch-label">シャッフル</span>
+                            </label>
+                            <button id="restart-btn" class="icon-btn" title="最初から">🔄</button>
+                        </div>
+                    </div>
                     <div class="progress-container">
                         <div id="progress-bar" class="progress-bar"></div>
                         <span id="progress-text">0/0</span>

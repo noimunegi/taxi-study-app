@@ -217,7 +217,6 @@ const App = {
                 this.state.currentQuestionIndex++;
                 this.updateQuestionUI();
             } else {
-                alert("お疲れ様でした！このセットは完了です。");
                 this.switchScreen('set-selection-screen');
                 this.renderSetList();
             }

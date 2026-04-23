@@ -35,7 +35,7 @@ body, html {
     background-color: var(--bg-app);
     color: var(--text-main);
     height: 100%;
-    overflow: hidden;
+    /* overflow: hidden; */ /* モバイルでスクロールが効かなくなる原因になるため削除 */
 }
 
 #app {
@@ -234,7 +234,7 @@ main {
 
 .card {
     width: 100%;
-    height: 350px;
+    height: 480px; /* 350pxから大幅にアップ */
     position: relative;
     transform-style: preserve-3d;
     transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
@@ -252,14 +252,15 @@ main {
     backface-visibility: hidden;
     background-color: var(--bg-card);
     border-radius: 1.5rem;
-    padding: 2rem;
+    padding: 1.5rem; /* 2remから少し縮小 */
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
+    justify-content: flex-start; /* centerから変更 */
+    align-items: flex-start; /* centerから変更 */
+    text-align: left; /* centerから変更 */
     box-shadow: var(--card-shadow);
     border: 1px solid var(--border);
+    overflow: hidden; /* 内部のスクロールを生かす */
 }
 
 .card-back {
@@ -290,15 +291,16 @@ main {
 }
 
 .question-text {
-    font-size: 1.15rem;
+    font-size: 1.1rem; /* 1.15remから微調整 */
     line-height: 1.5;
     font-weight: 500;
     width: 100%;
     text-align: left;
     overflow-y: auto;
-    padding: 0.5rem;
-    margin: 1rem 0;
-    flex: 1; /* 内容に応じて伸長 */
+    padding: 0.5rem 0;
+    margin-top: 2.5rem; /* メタ情報の分を開ける */
+    flex: 1;
+    -webkit-overflow-scrolling: touch; /* iOSでのスクロールを滑らかに */
 }
 
 /* 穴埋め問題専用スタイル */
@@ -363,7 +365,8 @@ main {
     width: 100%;
     text-align: left;
     overflow-y: auto;
-    max-height: 150px;
+    flex: 1; /* 固定高さから可変に変更 */
+    -webkit-overflow-scrolling: touch;
 }
 
 .explanation-section h3 {
@@ -465,4 +468,4 @@ input:checked + .slider:before {
     0% { opacity: 0.5; }
     50% { opacity: 1; }
     100% { opacity: 0.5; }
-    }
+}

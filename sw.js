@@ -1,4 +1,4 @@
-const CACHE_NAME = 'taxi-study-v4';
+const CACHE_NAME = 'taxi-study-v5';
 const ASSETS = [
   './',
   './index.html',

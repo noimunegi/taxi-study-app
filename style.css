@@ -234,7 +234,9 @@ main {
 
 .card {
     width: 100%;
-    height: 480px; /* 350pxから大幅にアップ */
+    height: calc(100vh - 220px);
+    min-height: 480px;
+    max-height: 700px;
     position: relative;
     transform-style: preserve-3d;
     transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
@@ -291,7 +293,7 @@ main {
 }
 
 .question-text {
-    font-size: 1.1rem; /* 1.15remから微調整 */
+    font-size: 1.05rem; /* slightly smaller to fit better */
     line-height: 1.5;
     font-weight: 500;
     width: 100%;
@@ -300,6 +302,7 @@ main {
     padding: 0.5rem 0;
     margin-top: 2.5rem; /* メタ情報の分を開ける */
     flex: 1;
+    height: 100%; /* added for proper scroll */
     -webkit-overflow-scrolling: touch; /* iOSでのスクロールを滑らかに */
 }
 

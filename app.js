@@ -6,8 +6,12 @@ const App = {
         currentQuestionIndex: 0,
         isFlipped: false,
         shuffleMode: false,
-        questions: [], // 現在の問題リスト（シャッフル対応）
-        progress: {} // { setId: lastIndex }
+        isTestMode: false,
+        testScore: 0,
+        questions: [], // 現在の問題リスト
+        progress: {}, // { setId: lastIndex }
+        reviewQuestionIds: [], // ["setId_questionN", ...]
+        testHistory: [] // [{date: 'MM/DD', percent: 85}, ...]
     },
 
     // 初期化
@@ -27,6 +31,8 @@ const App = {
             this.state.darkMode = parsed.darkMode || false;
             this.state.shuffleMode = parsed.shuffleMode || false;
             this.state.progress = parsed.progress || {};
+            this.state.reviewQuestionIds = parsed.reviewQuestionIds || [];
+            this.state.testHistory = parsed.testHistory || [];
         }
     },
 
@@ -35,7 +41,9 @@ const App = {
         localStorage.setItem('taxi_study_state', JSON.stringify({
             darkMode: this.state.darkMode,
             shuffleMode: this.state.shuffleMode,
-            progress: this.state.progress
+            progress: this.state.progress,
+            reviewQuestionIds: this.state.reviewQuestionIds,
+            testHistory: this.state.testHistory
         }));
     },
 
@@ -56,11 +64,26 @@ const App = {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById(screenId).classList.add('active');
         
+        // テストモードクラスの着脱
+        if (this.state.isTestMode) {
+            document.body.classList.add('is-test-mode');
+            document.getElementById('test-controls').style.display = 'grid';
+        } else {
+            document.body.classList.remove('is-test-mode');
+            document.getElementById('test-controls').style.display = 'none';
+        }
+
         // ヘッダータイトルの更新
         const titleEl = document.getElementById('screen-title');
         if (screenId === 'study-screen') {
-            const set = studyData.find(d => d.id === this.state.currentSetId);
-            titleEl.textContent = set ? set.title : "学習中";
+            if (this.state.isTestMode) {
+                titleEl.textContent = "実力テスト";
+            } else if (this.state.currentSetId === 'review') {
+                titleEl.textContent = "復習問題";
+            } else {
+                const set = studyData.find(d => d.id === this.state.currentSetId);
+                titleEl.textContent = set ? set.title : "学習中";
+            }
         } else {
             titleEl.textContent = "タクシー法令対策";
         }
@@ -68,9 +91,28 @@ const App = {
 
     // セットリストの描画
     renderSetList() {
+        this.renderHistoryGraph(); // グラフを描画
+
         const container = document.getElementById('set-list');
         container.innerHTML = '';
         
+        // 1. 復習問題セットを最初に追加（あれば）
+        if (this.state.reviewQuestionIds.length > 0) {
+            const reviewItem = document.createElement('div');
+            reviewItem.className = 'set-item review-set';
+            reviewItem.style.border = '2px solid #ef4444';
+            reviewItem.innerHTML = `
+                <div class="set-info">
+                    <h3 style="color:#ef4444;">🔥 復習問題</h3>
+                    <p>間違えた・自信がない問題 (${this.state.reviewQuestionIds.length}問)</p>
+                </div>
+                <div class="chevron">›</div>
+            `;
+            reviewItem.onclick = () => this.startStudy('review');
+            container.appendChild(reviewItem);
+        }
+
+        // 2. 通常のセットを追加
         studyData.forEach(set => {
             const lastIndex = this.state.progress[set.id] || 0;
             const progressPercent = Math.round((lastIndex / (set.questions.length - 1)) * 100);
@@ -90,29 +132,194 @@ const App = {
         });
     },
 
+    // テスト開始
+    startTest() {
+        this.state.isTestMode = true;
+        this.state.testScore = 0;
+        this.state.currentSetId = 'test';
+        
+        // 全問題から○×問題を抽出
+        let allOxQuestions = [];
+        studyData.forEach(set => {
+            set.questions.forEach(q => {
+                if (q.a === 'O' || q.a === 'X') {
+                    // IDを付与してコピー
+                    allOxQuestions.push({
+                        ...q,
+                        _setId: set.id,
+                        _uid: `${set.id}_${q.n}`
+                    });
+                }
+            });
+        });
+
+        // シャッフルして40問選ぶ
+        this.shuffleArray(allOxQuestions);
+        this.state.questions = allOxQuestions.slice(0, 40);
+        this.state.currentQuestionIndex = 0;
+        this.state.isFlipped = false;
+
+        this.updateQuestionUI();
+        this.switchScreen('study-screen');
+    },
+
     // 学習開始
     startStudy(setId) {
+        this.state.isTestMode = false;
         this.state.currentSetId = setId;
-        const set = studyData.find(d => d.id === setId);
         
-        // 問題リストの作成
-        this.state.questions = [...set.questions];
-        if (this.state.shuffleMode) {
+        if (setId === 'review') {
+            // 復習問題リストを作成
+            const reviewQuestions = [];
+            this.state.reviewQuestionIds.forEach(uid => {
+                const parts = uid.split('_');
+                const sId = parts[0];
+                const qN = parts.slice(1).join('_'); // 問2-1などの形式に対応
+                const set = studyData.find(d => d.id === sId);
+                if (set) {
+                    const q = set.questions.find(item => String(item.n) === qN);
+                    if (q) {
+                        reviewQuestions.push({
+                            ...q,
+                            _setId: sId,
+                            _uid: uid
+                        });
+                    }
+                }
+            });
+            this.state.questions = reviewQuestions;
+        } else {
+            const set = studyData.find(d => d.id === setId);
+            this.state.questions = set.questions.map(q => ({
+                ...q,
+                _setId: setId,
+                _uid: `${setId}_${q.n}`
+            }));
+        }
+
+        if (this.state.shuffleMode && setId !== 'review') {
             this.shuffleArray(this.state.questions);
         }
 
-        this.state.currentQuestionIndex = this.state.progress[setId] || 0;
-        // シャッフル時は進捗（インデックス）が意味をなさない場合があるが、一旦0から、または前回値があればそこから。
-        // 基本的にシャッフル切り替え時は最初からにするのが一般的
-        if (this.state.shuffleMode) this.state.currentQuestionIndex = 0;
-
+        this.state.currentQuestionIndex = (setId === 'review' || this.state.shuffleMode) ? 0 : (this.state.progress[setId] || 0);
         this.state.isFlipped = false;
         
-        // UI（チェックボックス等）の反映
         document.getElementById('shuffle-toggle').checked = this.state.shuffleMode;
         
         this.updateQuestionUI();
         this.switchScreen('study-screen');
+    },
+
+    // 回答処理 (テストモード)
+    handleTestAnswer(userChoice) {
+        if (!this.state.isTestMode) return;
+
+        const q = this.state.questions[this.state.currentQuestionIndex];
+        const isCorrect = userChoice === q.a;
+
+        if (isCorrect) {
+            this.state.testScore++;
+        } else {
+            // 間違い、または「？」なら復習リストに追加
+            this.addToReview(q._uid);
+        }
+
+        // 次の問題へ
+        if (this.state.currentQuestionIndex < this.state.questions.length - 1) {
+            this.state.currentQuestionIndex++;
+            this.updateQuestionUI();
+        } else {
+            this.showTestResult();
+        }
+    },
+
+    // 復習リストに追加
+    addToReview(uid) {
+        if (!this.state.reviewQuestionIds.includes(uid)) {
+            this.state.reviewQuestionIds.push(uid);
+            this.saveState();
+        }
+    },
+
+    // 復習リストから削除
+    removeFromReview(uid) {
+        this.state.reviewQuestionIds = this.state.reviewQuestionIds.filter(id => id !== uid);
+        this.saveState();
+        
+        if (this.state.currentSetId === 'review') {
+            // 復習モード中なら表示を更新
+            if (this.state.reviewQuestionIds.length === 0) {
+                this.switchScreen('set-selection-screen');
+                this.renderSetList();
+            } else {
+                // 現在の問題をリストから取り除き、インデックスを調整
+                this.state.questions = this.state.questions.filter(q => q._uid !== uid);
+                if (this.state.currentQuestionIndex >= this.state.questions.length) {
+                    this.state.currentQuestionIndex = Math.max(0, this.state.questions.length - 1);
+                }
+                this.updateQuestionUI();
+            }
+        }
+    },
+
+    // 結果表示
+    showTestResult() {
+        const score = this.state.testScore;
+        const total = this.state.questions.length;
+        const percent = Math.round((score / total) * 100);
+
+        // 履歴に保存
+        const today = new Date();
+        const dateStr = `${today.getMonth() + 1}/${today.getDate()}`;
+        this.state.testHistory.push({ date: dateStr, percent: percent });
+        // 最大15件まで保持
+        if (this.state.testHistory.length > 15) {
+            this.state.testHistory.shift();
+        }
+        this.saveState();
+
+        document.getElementById('result-score').textContent = `${percent}%`;
+        document.getElementById('result-correct').textContent = score;
+        document.getElementById('result-total').textContent = total;
+        
+        const msg = percent === 100 ? "素晴らしい！満点です！" : (percent >= 80 ? "合格圏内です！その調子！" : "あと少し！間違えた問題を復習しましょう。");
+        document.getElementById('result-message').textContent = msg;
+
+        document.getElementById('test-result-overlay').style.display = 'flex';
+    },
+
+    // グラフの描画
+    renderHistoryGraph() {
+        const container = document.getElementById('history-graph-container');
+        const barsContainer = document.getElementById('history-graph-bars');
+        
+        if (!this.state.testHistory || this.state.testHistory.length === 0) {
+            container.style.display = 'none';
+            return;
+        }
+
+        container.style.display = 'block';
+        barsContainer.innerHTML = '';
+
+        this.state.testHistory.forEach(record => {
+            const barItem = document.createElement('div');
+            barItem.className = 'bar-item';
+            
+            const isPerfect = record.percent === 100;
+            const fillClass = isPerfect ? 'bar-fill perfect' : 'bar-fill';
+            
+            barItem.innerHTML = `
+                <div class="bar-value">${record.percent}%</div>
+                <div class="${fillClass}" style="height: ${record.percent}%;"></div>
+                <div class="bar-date">${record.date}</div>
+            `;
+            barsContainer.appendChild(barItem);
+        });
+
+        // 常に最新（右側）にスクロールしておく
+        setTimeout(() => {
+            barsContainer.scrollLeft = barsContainer.scrollWidth;
+        }, 50);
     },
 
     // 配列のシャッフル
@@ -126,47 +333,34 @@ const App = {
     // 問題表示の更新
     updateQuestionUI() {
         const q = this.state.questions[this.state.currentQuestionIndex];
+        if (!q) return;
         
-        // カードの初期化（表に戻す）
         const card = document.getElementById('question-card');
-        const isAlreadyFlipped = card.classList.contains('is-flipped');
-        
-        if (isAlreadyFlipped) {
-            card.classList.remove('is-flipped');
-            this.state.isFlipped = false;
-        }
+        card.classList.remove('is-flipped');
+        this.state.isFlipped = false;
 
-        // 問題文（表面）を即座に更新
         document.getElementById('question-number').textContent = `問 ${q.n}`;
         document.getElementById('question-text').innerHTML = q.q;
         document.getElementById('question-type').textContent = q.style === 'fill' ? "穴埋め問題" : "⚪︎×問題";
 
-        // 解答（裏面）の更新は、カードが表を向いている間にこっそり行う
-        // チラつき防止のため、少し遅延させるか、非表示の状態で更新する
-        const updateBackContent = () => {
-            const iconEl = document.getElementById('answer-icon');
-            const labelEl = document.getElementById('answer-text');
-            const explanationEl = document.getElementById('explanation-text');
-            
-            iconEl.textContent = q.a;
-            iconEl.className = 'answer-icon ' + (q.a === 'O' ? 'is-o' : (q.a === 'X' ? 'is-x' : ''));
-            
-            // 解答が長い（穴埋めなど）の場合は文字サイズを調整
-            if (q.a.length > 5) {
-                iconEl.classList.add('is-small');
-            } else {
-                iconEl.classList.remove('is-small');
-            }
+        // 解答（裏面）の更新
+        const iconEl = document.getElementById('answer-icon');
+        const labelEl = document.getElementById('answer-text');
+        const explanationEl = document.getElementById('explanation-text');
+        
+        iconEl.textContent = q.a;
+        iconEl.className = 'answer-icon ' + (q.a === 'O' ? 'is-o' : (q.a === 'X' ? 'is-x' : ''));
+        if (q.a.length > 5) iconEl.classList.add('is-small'); else iconEl.classList.remove('is-small');
 
-            labelEl.textContent = q.a === 'O' ? "正解：正しい" : (q.a === 'X' ? "正解：誤り" : "解答");
-            explanationEl.innerHTML = q.ex || "解説はありません。";
-        };
+        labelEl.textContent = q.a === 'O' ? "正解：正しい" : (q.a === 'X' ? "正解：誤り" : "解答");
+        explanationEl.innerHTML = q.ex || "解説はありません。";
 
-        if (isAlreadyFlipped) {
-            // 回転アニメーション（0.6s）の途中で中身が切り替わらないよう少し待つ
-            setTimeout(updateBackContent, 300);
+        // 復習削除ボタンの表示制御
+        const reviewArea = document.getElementById('review-action-area');
+        if (this.state.currentSetId === 'review') {
+            reviewArea.style.display = 'block';
         } else {
-            updateBackContent();
+            reviewArea.style.display = 'none';
         }
 
         // 進捗バー
@@ -175,12 +369,12 @@ const App = {
         document.getElementById('progress-bar').style.width = `${(current / total) * 100}%`;
         document.getElementById('progress-text').textContent = `${current}/${total}`;
 
-        // ナビゲーションボタンの管理
+        // ナビゲーションボタン
         document.getElementById('prev-btn').disabled = this.state.currentQuestionIndex === 0;
         document.getElementById('next-btn').textContent = current === total ? "完了" : "次へ";
 
-        // 進捗保存 (シャッフル時は保存しない、またはセット単位で管理)
-        if (!this.state.shuffleMode) {
+        // 進捗保存
+        if (!this.state.shuffleMode && !this.state.isTestMode && this.state.currentSetId !== 'review') {
             this.state.progress[this.state.currentSetId] = this.state.currentQuestionIndex;
             this.saveState();
         }
@@ -195,10 +389,36 @@ const App = {
             this.saveState();
         };
 
-        // カードめくり
+        // テスト開始ボタン
+        document.getElementById('start-test-btn').onclick = () => this.startTest();
+
+        // カードめくり (テストモード以外)
         document.getElementById('question-card').onclick = () => {
+            if (this.state.isTestMode) return;
             this.state.isFlipped = !this.state.isFlipped;
             document.getElementById('question-card').classList.toggle('is-flipped');
+        };
+
+        // テスト回答ボタン
+        document.querySelectorAll('.test-answer-btn').forEach(btn => {
+            btn.onclick = (e) => {
+                const choice = e.currentTarget.getAttribute('data-answer');
+                this.handleTestAnswer(choice);
+            };
+        });
+
+        // 復習リストから外すボタン
+        document.getElementById('remove-review-btn').onclick = (e) => {
+            e.stopPropagation();
+            const q = this.state.questions[this.state.currentQuestionIndex];
+            if (q) this.removeFromReview(q._uid);
+        };
+
+        // 結果を閉じる
+        document.getElementById('close-result-btn').onclick = () => {
+            document.getElementById('test-result-overlay').style.display = 'none';
+            this.switchScreen('set-selection-screen');
+            this.renderSetList();
         };
 
         // 前へ
@@ -226,7 +446,6 @@ const App = {
         document.getElementById('shuffle-toggle').onchange = (e) => {
             this.state.shuffleMode = e.target.checked;
             this.saveState();
-            // 切り替えたら再開（最初から）
             this.startStudy(this.state.currentSetId);
         };
 

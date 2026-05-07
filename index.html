@@ -29,6 +29,21 @@
                     <h2>学習セットを選択</h2>
                     <p>解きたい問題を選択してください。</p>
                 </div>
+                
+                <!-- 学習履歴グラフコンテナ -->
+                <div id="history-graph-container" class="history-graph-wrapper" style="display:none;">
+                    <h3>📈 最近の実力テスト成績</h3>
+                    <div id="history-graph-bars" class="graph-bars">
+                        <!-- JSで動的に生成 -->
+                    </div>
+                </div>
+
+                <div class="test-start-container">
+                    <button id="start-test-btn" class="test-btn-large">
+                        🏆 実力テストを開始
+                        <span>全問題からランダムに40問出題</span>
+                    </button>
+                </div>
                 <div id="set-list" class="set-list">
                     <!-- data.js から動的に生成 -->
                 </div>
@@ -74,10 +89,19 @@
                             <div class="explanation-section">
                                 <h3>解説</h3>
                                 <p id="explanation-text"></p>
+                                <div id="review-action-area" class="review-actions" style="display:none;">
+                                    <button id="remove-review-btn" class="remove-review-btn">この問題を復習リストから外す</button>
+                                </div>
                             </div>
                             <div class="tap-hint">タップで問題に戻る</div>
                         </div>
                     </div>
+                </div>
+
+                <div id="test-controls">
+                    <button class="test-answer-btn btn-o" data-answer="O">○<span>正しい</span></button>
+                    <button class="test-answer-btn btn-x" data-answer="X">×<span>誤り</span></button>
+                    <button class="test-answer-btn btn-unsure" data-answer="?">？<span>わからない</span></button>
                 </div>
 
                 <div class="controls">
@@ -86,6 +110,26 @@
                 </div>
             </section>
         </main>
+    </div>
+
+    <!-- テスト結果オーバーレイ -->
+    <div id="test-result-overlay">
+        <div class="result-card">
+            <h2>テスト結果</h2>
+            <div id="result-score" class="result-score">0</div>
+            <div class="result-stats">
+                <div class="stat-item">
+                    <span>正解数</span>
+                    <span id="result-correct" class="stat-value">0</span>
+                </div>
+                <div class="stat-item">
+                    <span>総問題数</span>
+                    <span id="result-total" class="stat-value">40</span>
+                </div>
+            </div>
+            <p id="result-message">お疲れ様でした！間違えた問題は復習リストに追加されました。</p>
+            <button id="close-result-btn" class="ctrl-btn primary" style="width:100%; margin-top:1rem;">メニューに戻る</button>
+        </div>
     </div>
 
     <!-- スクリプト -->

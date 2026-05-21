@@ -293,17 +293,18 @@ main {
 }
 
 .question-text {
-    font-size: 1.05rem; /* slightly smaller to fit better */
-    line-height: 1.5;
+    font-size: 1.02rem; /* slightly smaller to fit better on small screens */
+    line-height: 1.55;
     font-weight: 500;
     width: 100%;
     text-align: left;
     overflow-y: auto;
-    padding: 0.5rem 0;
+    padding: 0.5rem 0 3.5rem 0; /* 下部のタップヒントと被らないように十分な下部余白を確保 */
     margin-top: 2.5rem; /* メタ情報の分を開ける */
     flex: 1;
-    height: 100%; /* added for proper scroll */
+    height: 100%;
     -webkit-overflow-scrolling: touch; /* iOSでのスクロールを滑らかに */
+    scrollbar-width: thin; /* Firefox用スクロールバー */
 }
 
 /* 穴埋め問題専用スタイル */
@@ -706,4 +707,69 @@ input:checked + .slider:before {
     color: var(--text-sub);
     font-size: 0.9rem;
     padding: 2rem 0;
+}
+
+/* --- 語群折りたたみ（アコーディオン）用スタイル --- */
+.word-group-details {
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    background-color: var(--bg-app);
+    margin-top: 1rem;
+    width: 100%;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.word-group-details[open] {
+    box-shadow: var(--shadow);
+}
+
+.word-group-details summary {
+    padding: 0.75rem 1rem;
+    font-weight: bold;
+    font-size: 0.875rem;
+    color: var(--primary);
+    cursor: pointer;
+    list-style: none; /* デフォルトの三角形を消す */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+    background-color: var(--bg-card);
+    border-bottom: 1px solid transparent;
+    transition: background-color 0.2s;
+}
+
+.word-group-details summary::-webkit-details-marker {
+    display: none; /* Safari用の三角形を消す */
+}
+
+.word-group-details summary:active {
+    background-color: var(--bg-app);
+}
+
+/* カスタム矢印を追加 */
+.word-group-details summary::after {
+    content: "▼";
+    font-size: 0.7rem;
+    transition: transform 0.2s ease;
+    color: var(--text-sub);
+}
+
+.word-group-details[open] summary::after {
+    transform: rotate(180deg);
+    color: var(--primary);
+}
+
+.word-group-details[open] summary {
+    border-bottom: 1px solid var(--border);
+}
+
+.word-group-details .word-group-content {
+    padding: 1rem;
+    font-size: 0.85rem;
+    line-height: 1.6;
+    color: var(--text-main);
+    background-color: var(--bg-app);
 }

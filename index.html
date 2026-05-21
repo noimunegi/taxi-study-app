@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>タクシー法令試験 対策</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=15">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2563eb">
     <link rel="apple-touch-icon" href="icon-192.png">
@@ -133,11 +133,35 @@
     </div>
 
     <!-- スクリプト -->
-    <script src="data.js"></script>
-    <script src="app.js"></script>
+    <script src="data.js?v=15"></script>
+    <script src="app.js?v=15"></script>
     <script>
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js');
+            navigator.serviceWorker.register('sw.js?v=15').then(reg => {
+                console.log('ServiceWorker registered with scope:', reg.scope);
+                reg.addEventListener('updatefound', () => {
+                    const installingWorker = reg.installing;
+                    if (installingWorker) {
+                        installingWorker.addEventListener('statechange', () => {
+                            if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                console.log('New version available. Activating...');
+                            }
+                        });
+                    }
+                });
+            }).catch(err => {
+                console.error('ServiceWorker registration failed:', err);
+            });
+
+            // コントローラーが交代（新バージョン有効化）したら自動でリロード
+            let refreshing = false;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (!refreshing) {
+                    refreshing = true;
+                    console.log('New ServiceWorker controller active. Reloading...');
+                    window.location.reload();
+                }
+            });
         }
     </script>
 </body>

@@ -340,7 +340,17 @@ const App = {
         this.state.isFlipped = false;
 
         document.getElementById('question-number').textContent = `問 ${q.n}`;
-        document.getElementById('question-text').innerHTML = q.q;
+        
+        // 語群（word-group）が含まれている場合は、自動的に折りたたみ式（details/summary）アコーディオンに変換して表示領域を節約
+        let questionHtml = q.q;
+        if (questionHtml.includes('class="word-group"')) {
+            questionHtml = questionHtml.replace(
+                /<div class="word-group">([\s\S]*?)<\/div>/i,
+                '<details class="word-group-details"><summary>📖 語群を表示 (タップして展開)</summary><div class="word-group-content">$1</div></details>'
+            );
+        }
+        document.getElementById('question-text').innerHTML = questionHtml;
+        
         document.getElementById('question-type').textContent = q.style === 'fill' ? "穴埋め問題" : "⚪︎×問題";
 
         // 解答（裏面）の更新
@@ -392,11 +402,44 @@ const App = {
         // テスト開始ボタン
         document.getElementById('start-test-btn').onclick = () => this.startTest();
 
+        // スクロール時の誤反転を防ぐためのタッチジェスチャ追跡
+        let startX = 0;
+        let startY = 0;
+        let isDrag = false;
+        const cardElement = document.getElementById('question-card');
+
+        cardElement.addEventListener('touchstart', (e) => {
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+            isDrag = false;
+        }, { passive: true });
+
+        cardElement.addEventListener('touchmove', (e) => {
+            const moveX = e.touches[0].clientX;
+            const moveY = e.touches[0].clientY;
+            // 縦横どちらかに10px以上移動した場合はドラッグ(スクロール)とみなす
+            if (Math.abs(moveX - startX) > 10 || Math.abs(moveY - startY) > 10) {
+                isDrag = true;
+            }
+        }, { passive: true });
+
         // カードめくり (テストモード以外)
-        document.getElementById('question-card').onclick = () => {
+        cardElement.onclick = (e) => {
             if (this.state.isTestMode) return;
+            
+            // ドラッグ操作（スクロール）された場合は反転させない
+            if (isDrag) {
+                isDrag = false;
+                return;
+            }
+
+            // クリックされたターゲットが summary、details、またはその中のリンクやボタンの場合は反転させない
+            if (e.target.closest('summary, details, a, button, input, label, select')) {
+                return;
+            }
+
             this.state.isFlipped = !this.state.isFlipped;
-            document.getElementById('question-card').classList.toggle('is-flipped');
+            cardElement.classList.toggle('is-flipped');
         };
 
         // テスト回答ボタン

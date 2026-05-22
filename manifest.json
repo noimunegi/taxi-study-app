@@ -1,21 +1,24 @@
 {
-  "name": "タクシー法令試験対策",
+  "name": "タクシー法令試験 対策",
   "short_name": "タクシー試験",
-  "description": "個人タクシー法令試験対策アプリ",
+  "description": "タクシー法令試験の対策学習アプリ",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#f1f5f9",
   "theme_color": "#2563eb",
+  "orientation": "portrait",
   "icons": [
     {
       "src": "icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
       "src": "icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
